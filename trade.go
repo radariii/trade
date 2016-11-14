@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	"encoding/json"
+	"strconv"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
@@ -11,7 +14,24 @@ import (
 type SimpleChaincode struct {
 }
 
+type Order struct {
+	orderTimestamp   int
+	shippedTimestamp int
+	arrivedTimestamp int
+	quantity         int
+	totalPrice       float32
+}
+
+type Producer struct {
+	name             string
+	currentInventory int
+	orders           []Order
+}
+
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+	// When we start, we want to initialize the global state
+
 	// var A, B string    // Entities
 	// var Aval, Bval int // Asset holdings
 	// var err error
@@ -47,8 +67,35 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
-// Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+	var producerName string
+	var coffeeAmtHarvested int
+	var producer Producer
+
+	if function == "harvestCoffee" {
+		if len(args) != 2 {
+			return nil, errors.New("Incorrect number of arguments. Expecting 2")
+		}
+		producerName = args[0]
+		coffeeAmtHarvested, _ = strconv.Atoi(args[1])
+
+		// Initialize this producer if not already there
+		producerBytes, _ := stub.GetState(producerName)
+		if producerBytes == nil {
+			// producer not found
+			producer = Producer{name: producerName, currentInventory: 0}
+		} else {
+			producer = Producer{}
+			json.Unmarshal(producerBytes, &producer)
+		}
+
+		producer.currentInventory = producer.currentInventory + coffeeAmtHarvested
+
+		fmt.Printf("Producer %s just harvested %d pounds of coffee beans.", producerName, coffeeAmtHarvested)
+
+	}
+
 	// if function == "delete" {
 	// 	// Deletes an entity from its state
 	// 	return t.delete(stub, args)

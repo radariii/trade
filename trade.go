@@ -94,6 +94,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 		fmt.Printf("Producer %s just harvested %d pounds of coffee beans.", producerName, coffeeAmtHarvested)
 
+		producerOut, _ := json.Marshal(producer)
+		stub.PutState(producerName, producerOut)
+
 	}
 
 	// if function == "delete" {
@@ -175,33 +178,49 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 
 // Query callback representing the query of a chaincode
 func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	if function != "query" {
-		return nil, errors.New("Invalid query function name. Expecting \"query\"")
-	}
-	var A string // Entities
-	var err error
 
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting name of the person to query")
-	}
+	if function == "getProducer" {
+		if len(args) != 1 {
+			return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		}
+		producerName := args[0]
+		producerBytes, _ := stub.GetState(producerName)
+		if producerBytes == nil {
+			return nil, errors.New("No producer found with name" + producerName)
+		}
 
-	A = args[0]
-
-	// Get the state from the ledger
-	Avalbytes, err := stub.GetState(A)
-	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
-		return nil, errors.New(jsonResp)
+		return producerBytes, nil
 	}
 
-	if Avalbytes == nil {
-		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return nil, errors.New(jsonResp)
-	}
+	return nil, errors.New("Incorrect query function name")
 
-	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
-	fmt.Printf("Query Response:%s\n", jsonResp)
-	return Avalbytes, nil
+	// if function != "query" {
+	// 	return nil, errors.New("Invalid query function name. Expecting \"query\"")
+	// }
+	// var A string // Entities
+	// var err error
+
+	// if len(args) != 1 {
+	// 	return nil, errors.New("Incorrect number of arguments. Expecting name of the person to query")
+	// }
+
+	// A = args[0]
+
+	// // Get the state from the ledger
+	// Avalbytes, err := stub.GetState(A)
+	// if err != nil {
+	// 	jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
+	// 	return nil, errors.New(jsonResp)
+	// }
+
+	// if Avalbytes == nil {
+	// 	jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
+	// 	return nil, errors.New(jsonResp)
+	// }
+
+	// jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
+	// fmt.Printf("Query Response:%s\n", jsonResp)
+	// return Avalbytes, nil
 }
 
 func main() {

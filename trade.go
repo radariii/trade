@@ -86,7 +86,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 			// producer not found
 			producer = Producer{name: producerName, currentInventory: 0}
 		} else {
-			producer = Producer{}
 			json.Unmarshal(producerBytes, &producer)
 		}
 

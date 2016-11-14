@@ -15,17 +15,17 @@ type SimpleChaincode struct {
 }
 
 type Order struct {
-	orderTimestamp   int
-	shippedTimestamp int
-	arrivedTimestamp int
-	quantity         int
-	totalPrice       float32
+	orderTimestamp   int     `json:"orderTimestamp"`
+	shippedTimestamp int     `json:"shippedTimestamp"`
+	arrivedTimestamp int     `json:"arrivedTimestamp"`
+	quantity         int     `json:"quantity"`
+	totalPrice       float32 `json:"totalPrice"`
 }
 
 type Producer struct {
-	name             string
-	currentInventory int
-	orders           []Order
+	name             string  `json:"name"`
+	currentInventory int     `json:"currentInventory"`
+	orders           []Order `json:"orders"`
 }
 
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {

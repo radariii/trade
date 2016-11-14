@@ -94,8 +94,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 		fmt.Printf("Producer %s just harvested %d pounds of coffee beans.", producerName, coffeeAmtHarvested)
 
-		producerOut, _ := json.Marshal(producer)
-		stub.PutState(producerName, producerOut)
+		//producerOut, _ := json.Marshal(producer)
+		//stub.PutState(producerName, producerOut)
+		stub.PutState(producerName, []byte("HelloWorld"))
 
 	}
 

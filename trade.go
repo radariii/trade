@@ -14,20 +14,23 @@ import (
 type SimpleChaincode struct {
 }
 
+// Order is a structure that defines an order
 type Order struct {
-	orderTimestamp   int     `json:"orderTimestamp"`
-	shippedTimestamp int     `json:"shippedTimestamp"`
-	arrivedTimestamp int     `json:"arrivedTimestamp"`
-	quantity         int     `json:"quantity"`
-	totalPrice       float32 `json:"totalPrice"`
+	OrderTimestamp   int     `json:"orderTimestamp"`
+	ShippedTimestamp int     `json:"shippedTimestamp"`
+	ArrivedTimestamp int     `json:"arrivedTimestamp"`
+	Quantity         int     `json:"quantity"`
+	TotalPrice       float32 `json:"totalPrice"`
 }
 
+// Producer is a structure that defines a producer
 type Producer struct {
-	name             string  `json:"name"`
-	currentInventory int     `json:"currentInventory"`
-	orders           []Order `json:"orders"`
+	Name             string  `json:"name"`
+	CurrentInventory int     `json:"currentInventory"`
+	Orders           []Order `json:"orders"`
 }
 
+// Init is where it all begins
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	// When we start, we want to initialize the global state
@@ -67,6 +70,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
+// Invoke is where new things happen
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	var producerName string
@@ -84,14 +88,14 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerBytes, _ := stub.GetState(producerName)
 		if producerBytes == nil {
 			// producer not found
-			producer = Producer{name: producerName, currentInventory: 0}
+			producer = Producer{Name: producerName, CurrentInventory: 0}
 		} else {
 			json.Unmarshal(producerBytes, &producer)
 		}
 
-		producer.currentInventory = producer.currentInventory + coffeeAmtHarvested
+		producer.CurrentInventory = producer.CurrentInventory + coffeeAmtHarvested
 
-		outputStr := fmt.Sprintf("Producer %s just harvested %d pounds of coffee beans. Current Inventory = %d", producerName, coffeeAmtHarvested, producer.currentInventory)
+		outputStr := fmt.Sprintf("Producer %s just harvested %d pounds of coffee beans. Current Inventory = %d", producerName, coffeeAmtHarvested, producer.CurrentInventory)
 
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)

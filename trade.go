@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/cweill/gotests/internal/output"
 )
 
 // SimpleChaincode example simple Chaincode implementation
@@ -28,6 +29,9 @@ type Producer struct {
 	Name             string  `json:"name"`
 	CurrentInventory int     `json:"currentInventory"`
 	Orders           []Order `json:"orders"`
+}
+
+type storedObject interface {
 }
 
 // Init is where it all begins
@@ -70,14 +74,18 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
+func (t *SimpleChaincode) producerFactory() storedObject {
+	return Producer{Name: "hello", CurrentInventory: 100}
+}
+
 // Invoke is where new things happen
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	var producerName string
-	var coffeeAmtHarvested int
 	var producer Producer
 
 	if function == "harvestCoffee" {
+		var coffeeAmtHarvested int
 		if len(args) != 2 {
 			return nil, errors.New("Incorrect number of arguments. Expecting 2")
 		}
@@ -100,7 +108,29 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
 		return []byte(outputStr), nil
-		//stub.PutState(producerName, []byte("HelloWorld"))
+
+	} else if function == "buyCoffee" {
+		if len(args) != 4 {
+			return nil, errors.New("Incorrect number of arguments. Expecting 4")
+		}
+		producerName = args[0]
+		buyerName := args[1]
+		amountPurchased, _ := strconv.Atoi(args[2])
+		totalPrice, _ := strconv.Atoi(args[3])
+
+		var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
+		producer.CurrentInventory -= amountPurchased
+
+		outputStr := fmt.Sprintf("Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
+		return byte[](outputStr)
+
+	} else if function == "shipCoffee" {
+
+	} else if function == "coffeeArrives" {
+
+	} else if function == "makePayment" {
+
+	} else if function == "coffeeArrivesAtBorder" {
 
 	}
 
@@ -162,6 +192,18 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	// }
 
 	return nil, nil
+}
+
+func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, factory func() storedObject) storedObject {
+	// Initialize this producer if not already there
+	storedObjectBytes, _ := stub.GetState(key)
+	var storedObjectInst storedObject
+	if storedObjectBytes == nil {
+		storedObjectInst = factory()
+	} else {
+		json.Unmarshal(storedObjectBytes, &storedObjectInst)
+	}
+	return storedObjectInst
 }
 
 // Deletes an entity from state

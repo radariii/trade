@@ -120,7 +120,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
 		producer.CurrentInventory -= amountPurchased
 
-		outputStr := fmt.Sprintf("Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
+		fmt.Printf("Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
 

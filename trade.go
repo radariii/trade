@@ -121,6 +121,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producer.CurrentInventory -= amountPurchased
 
 		outputStr := fmt.Sprintf("Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
+		producerOut, _ := json.Marshal(producer)
+		stub.PutState(producerName, producerOut)
+
 		return []byte(outputStr), nil
 
 	} else if function == "shipCoffee" {

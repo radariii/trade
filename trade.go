@@ -124,7 +124,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
 
-		return []byte(outputStr), nil
+		return producerOut, nil
 
 	} else if function == "shipCoffee" {
 

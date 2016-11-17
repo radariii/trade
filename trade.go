@@ -200,11 +200,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, factory func() storedObject) storedObject {
 	// Initialize this producer if not already there
+	var storedObjectInst = factory()
 	storedObjectBytes, _ := stub.GetState(key)
-	var storedObjectInst storedObject
-	if storedObjectBytes == nil {
-		storedObjectInst = factory()
-	} else {
+	if storedObjectBytes != nil {
 		json.Unmarshal(storedObjectBytes, &storedObjectInst)
 	}
 	return storedObjectInst

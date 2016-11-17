@@ -9,6 +9,8 @@ import (
 
 	"os"
 
+	"log"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
@@ -83,7 +85,6 @@ func (t *SimpleChaincode) producerFactory(producerName string) Producer {
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 
 	var producerName string
-	var producer Producer
 	var err error
 
 	if function == "harvestCoffee" {
@@ -94,22 +95,18 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerName = args[0]
 		coffeeAmtHarvested, _ = strconv.Atoi(args[1])
 
-		// Initialize this producer if not already there
-		producerBytes, _ := stub.GetState(producerName)
-		if producerBytes == nil {
-			// producer not found
-			producer = Producer{Name: producerName, CurrentInventory: 0}
-		} else {
-			json.Unmarshal(producerBytes, &producer)
+		producer, err := t.getProducer(stub, producerName)
+		if err != nil {
+			return nil, errors.New("harvestCoffee: Error retrieving producer: " + err.Error())
 		}
 
 		producer.CurrentInventory = producer.CurrentInventory + coffeeAmtHarvested
 
-		outputStr := fmt.Sprintf("Producer %s just harvested %d pounds of coffee beans. Current Inventory = %d", producerName, coffeeAmtHarvested, producer.CurrentInventory)
+		log.Printf("Producer %s just harvested %d pounds of coffee beans. Current Inventory = %d", producerName, coffeeAmtHarvested, producer.CurrentInventory)
 
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
-		return []byte(outputStr), nil
+		return producerOut, nil
 
 	} else if function == "buyCoffee" {
 		if len(args) != 3 {

@@ -203,7 +203,10 @@ func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, fact
 	var storedObjectInst = factory()
 	storedObjectBytes, _ := stub.GetState(key)
 	if storedObjectBytes != nil {
-		json.Unmarshal(storedObjectBytes, &storedObjectInst)
+		//json.Unmarshal(storedObjectBytes, &storedObjectInst)
+		var producer Producer
+		json.Unmarshal(storedObjectBytes, &producer)
+		storedObjectInst = producer
 	}
 	return storedObjectInst
 }

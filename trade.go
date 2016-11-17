@@ -9,8 +9,6 @@ import (
 
 	"os"
 
-	"reflect"
-
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
@@ -121,7 +119,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		amountPurchased, _ := strconv.Atoi(args[2])
 		totalPrice, _ := strconv.Atoi(args[3])
 
-		var producer = t.get(stub, producerName, t.producerFactory, reflect.TypeOf(producer)).(Producer) // Type assertion to Producer
+		var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
 		producer.CurrentInventory -= amountPurchased
 
 		fmt.Fprintf(os.Stderr, "Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
@@ -200,18 +198,18 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	return nil, nil
 }
 
-func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, factory func() storedObject, objType reflect.Type) storedObject {
+func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, factory func() storedObject) storedObject {
 	// Initialize this producer if not already there
 	var storedObjectInst = factory()
 	storedObjectBytes, _ := stub.GetState(key)
 	if storedObjectBytes != nil {
-		//json.Unmarshal(storedObjectBytes, &storedObjectInst)
+		json.Unmarshal(storedObjectBytes, &storedObjectInst)
 		//var producer Producer
 		// json.Unmarshal(storedObjectBytes, &producer)
 		// storedObjectInst = producer
-		var loadedObj = reflect.Zero(objType)
-		json.Unmarshal(storedObjectBytes, &loadedObj)
-		storedObjectInst = loadedObj
+		// var loadedObj = reflect.Zero(objType)
+		// json.Unmarshal(storedObjectBytes, &loadedObj)
+		// storedObjectInst = loadedObj
 	}
 	return storedObjectInst
 }

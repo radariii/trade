@@ -118,6 +118,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerName = args[0]
 		buyerName := args[1]
 		var order Order
+		fmt.Fprintf(os.Stderr, "buyCoffee: order JSON input: '%s'", args[2])
 		err = json.Unmarshal([]byte(args[2]), &order)
 		if err != nil {
 			return nil, errors.New("buyCoffee: Error parsing order: " + err.Error())

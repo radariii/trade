@@ -83,10 +83,10 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	var producerName string
 	var producer Producer
 
+	return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	if function == "harvestCoffee" {
 		var coffeeAmtHarvested int
 		if len(args) != 2 {
-			return nil, errors.New("Incorrect number of arguments. Expecting 2")
 		}
 		producerName = args[0]
 		coffeeAmtHarvested, _ = strconv.Atoi(args[1])

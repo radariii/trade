@@ -75,8 +75,8 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	return nil, nil
 }
 
-func (t *SimpleChaincode) producerFactory() storedObject {
-	return Producer{Name: "hello", CurrentInventory: 100}
+func (t *SimpleChaincode) producerFactory(producerName string) Producer {
+	return Producer{Name: producerName, CurrentInventory: 100}
 }
 
 // Invoke is where new things happen
@@ -84,6 +84,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 	var producerName string
 	var producer Producer
+	var err error
 
 	if function == "harvestCoffee" {
 		var coffeeAmtHarvested int
@@ -111,18 +112,31 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return []byte(outputStr), nil
 
 	} else if function == "buyCoffee" {
-		if len(args) != 4 {
-			return nil, errors.New("Incorrect number of arguments. Expecting 4")
+		if len(args) != 3 {
+			return nil, errors.New("Incorrect number of arguments. Expecting 3")
 		}
 		producerName = args[0]
 		buyerName := args[1]
-		amountPurchased, _ := strconv.Atoi(args[2])
-		totalPrice, _ := strconv.Atoi(args[3])
+		var order Order
+		err = json.Unmarshal([]byte(args[2]), &order)
+		if err != nil {
+			return nil, errors.New("buyCoffee: Error parsing order: " + err.Error())
+		}
 
-		var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
-		producer.CurrentInventory -= amountPurchased
+		producer, err := t.getProducer(stub, producerName)
+		if err != nil {
+			return nil, errors.New("buyCoffee: Error retrieving producer: " + err.Error())
+		}
 
-		fmt.Fprintf(os.Stderr, "Buyer '%s' just purchased %d units from Producer '%s' for %d, leaving it with %d units in inventory of coffee beans. ", buyerName, amountPurchased, producerName, totalPrice, producer.CurrentInventory)
+		if producer.CurrentInventory < order.Quantity {
+			return nil, errors.New("Could not complete purchase. Producer has insufficient inventory.")
+		}
+
+		//var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
+		producer.CurrentInventory -= order.Quantity
+		producer.Orders = append(producer.Orders, order)
+
+		fmt.Fprintf(os.Stderr, "Buyer '%s' just purchased %d units from Producer '%s' for %f, leaving it with %d units in inventory of coffee beans. ", buyerName, order.Quantity, producerName, order.TotalPrice, producer.CurrentInventory)
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
 
@@ -196,6 +210,23 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	// }
 
 	return nil, nil
+}
+
+func (t *SimpleChaincode) getProducer(stub shim.ChaincodeStubInterface, producerName string) (Producer, error) {
+	var producer Producer
+	producerBytes, err := stub.GetState(producerName)
+	if err != nil {
+		return producer, err // Empty struct, but err indicates a problem
+	}
+	if producerBytes == nil {
+		producer = t.producerFactory(producerName)
+	} else {
+		err = json.Unmarshal(producerBytes, &producer)
+		if err != nil {
+			return producer, err
+		}
+	}
+	return producer, nil
 }
 
 func (t *SimpleChaincode) get(stub shim.ChaincodeStubInterface, key string, factory func() storedObject) storedObject {

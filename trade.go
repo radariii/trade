@@ -18,11 +18,11 @@ type SimpleChaincode struct {
 
 // Order is a structure that defines an order
 type Order struct {
-	OrderTimestamp   int     `json:"orderTimestamp"`
-	ShippedTimestamp int     `json:"shippedTimestamp"`
-	ArrivedTimestamp int     `json:"arrivedTimestamp"`
-	Quantity         int     `json:"quantity"`
-	TotalPrice       float32 `json:"totalPrice"`
+	OrderTimestamp   string  `json:"orderTimestamp,omitempty"`
+	ShippedTimestamp string  `json:"shippedTimestamp,omitempty"`
+	ArrivedTimestamp string  `json:"arrivedTimestamp,omitempty"`
+	Quantity         int     `json:"quantity,omitempty"`
+	TotalPrice       float32 `json:"totalPrice,omitempty"`
 }
 
 // Producer is a structure that defines a producer

@@ -1,15 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
 	"encoding/json"
 	"strconv"
 
-	"os"
-
 	"log"
+
+	"encoding/binary"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -20,6 +21,7 @@ type SimpleChaincode struct {
 
 // Order is a structure that defines an order
 type Order struct {
+	ID               string  `json:"id,omitempty"`
 	OrderTimestamp   string  `json:"orderTimestamp,omitempty"`
 	ShippedTimestamp string  `json:"shippedTimestamp,omitempty"`
 	ArrivedTimestamp string  `json:"arrivedTimestamp,omitempty"`
@@ -39,6 +41,20 @@ type storedObject interface {
 
 // Init is where it all begins
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+	// Create the table that will hold the orders
+	var c1 = shim.ColumnDefinition{Name: "ID", Type: shim.ColumnDefinition_STRING, Key: true}
+	var c2 = shim.ColumnDefinition{Name: "BuyerName", Type: shim.ColumnDefinition_STRING, Key: false}
+	var c3 = shim.ColumnDefinition{Name: "SellerName", Type: shim.ColumnDefinition_STRING, Key: false}
+	var c4 = shim.ColumnDefinition{Name: "Quantity", Type: shim.ColumnDefinition_UINT32, Key: false}
+	var c5 = shim.ColumnDefinition{Name: "TotalPrice", Type: shim.ColumnDefinition_BYTES, Key: false}
+	var columnDefs []*shim.ColumnDefinition
+
+	columnDefs = append(columnDefs, &c1, &c2, &c3, &c4, &c5)
+	err := stub.CreateTable("Orders", columnDefs)
+	if err != nil {
+		return nil, errors.New("Failed to initialize order table")
+	}
 
 	// When we start, we want to initialize the global state
 
@@ -115,7 +131,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		producerName = args[0]
 		buyerName := args[1]
 		var order Order
-		fmt.Fprintf(os.Stderr, "buyCoffee: order JSON input: '%s'", args[2])
+		log.Printf("buyCoffee: order JSON input: '%s'", args[2])
 		err = json.Unmarshal([]byte(args[2]), &order)
 		if err != nil {
 			return nil, errors.New("buyCoffee: Error parsing order: " + err.Error())
@@ -132,9 +148,24 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 		//var producer = t.get(stub, producerName, t.producerFactory).(Producer) // Type assertion to Producer
 		producer.CurrentInventory -= order.Quantity
+
+		buf := new(bytes.Buffer)
+		binary.Write(buf, binary.BigEndian, order.TotalPrice)
+		_, err = stub.InsertRow("Orders", shim.Row{
+			Columns: []*shim.Column{
+				&shim.Column{Value: &shim.Column_String_{String_: order.ID}},
+				&shim.Column{Value: &shim.Column_String_{String_: buyerName}},
+				&shim.Column{Value: &shim.Column_String_{String_: producerName}},
+				&shim.Column{Value: &shim.Column_Uint32{Uint32: uint32(order.Quantity)}},
+				&shim.Column{Value: &shim.Column_Bytes{Bytes: buf.Bytes()}},
+			}})
+		if err != nil {
+			return nil, errors.New("An error occurred adding the new order to the Orders table: " + err.Error())
+		}
+
 		producer.Orders = append(producer.Orders, order)
 
-		fmt.Fprintf(os.Stderr, "Buyer '%s' just purchased %d units from Producer '%s' for %f, leaving it with %d units in inventory of coffee beans. ", buyerName, order.Quantity, producerName, order.TotalPrice, producer.CurrentInventory)
+		log.Printf("Buyer '%s' just purchased %d units from Producer '%s' for %f, leaving it with %d units in inventory of coffee beans. ", buyerName, order.Quantity, producerName, order.TotalPrice, producer.CurrentInventory)
 		producerOut, _ := json.Marshal(producer)
 		stub.PutState(producerName, producerOut)
 

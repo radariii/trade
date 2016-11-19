@@ -56,40 +56,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 		return nil, errors.New("Failed to initialize order table")
 	}
 
-	// When we start, we want to initialize the global state
-
-	// var A, B string    // Entities
-	// var Aval, Bval int // Asset holdings
-	// var err error
-
-	// if len(args) != 4 {
-	// 	return nil, errors.New("Incorrect number of arguments. Expecting 4")
-	// }
-
-	// // Initialize the chaincode
-	// A = args[0]
-	// Aval, err = strconv.Atoi(args[1])
-	// if err != nil {
-	// 	return nil, errors.New("Expecting integer value for asset holding")
-	// }
-	// B = args[2]
-	// Bval, err = strconv.Atoi(args[3])
-	// if err != nil {
-	// 	return nil, errors.New("Expecting integer value for asset holding")
-	// }
-	// fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
-
-	// // Write the state to the ledger
-	// err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return nil, nil
 }
 
@@ -181,63 +147,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 
 	}
 
-	// if function == "delete" {
-	// 	// Deletes an entity from its state
-	// 	return t.delete(stub, args)
-	// }
-
-	// var A, B string    // Entities
-	// var Aval, Bval int // Asset holdings
-	// var X int          // Transaction value
-	// var err error
-
-	// if len(args) != 3 {
-	// 	return nil, errors.New("Incorrect number of arguments. Expecting 3")
-	// }
-
-	// A = args[0]
-	// B = args[1]
-
-	// // Get the state from the ledger
-	// // TODO: will be nice to have a GetAllState call to ledger
-	// Avalbytes, err := stub.GetState(A)
-	// if err != nil {
-	// 	return nil, errors.New("Failed to get state")
-	// }
-	// if Avalbytes == nil {
-	// 	return nil, errors.New("Entity not found")
-	// }
-	// Aval, _ = strconv.Atoi(string(Avalbytes))
-
-	// Bvalbytes, err := stub.GetState(B)
-	// if err != nil {
-	// 	return nil, errors.New("Failed to get state")
-	// }
-	// if Bvalbytes == nil {
-	// 	return nil, errors.New("Entity not found")
-	// }
-	// Bval, _ = strconv.Atoi(string(Bvalbytes))
-
-	// // Perform the execution
-	// X, err = strconv.Atoi(args[2])
-	// if err != nil {
-	// 	return nil, errors.New("Invalid transaction amount, expecting a integer value")
-	// }
-	// Aval = Aval - X
-	// Bval = Bval + X
-	// fmt.Printf("Aval = %d, Bval = %d\n", Aval, Bval)
-
-	// // Write the state back to the ledger
-	// err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return nil, nil
 }
 
@@ -305,6 +214,22 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		}
 
 		return producerBytes, nil
+	} else if function == "getOrder" {
+		if len(args) != 1 {
+			return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		}
+		orderID := args[0]
+		orderRow, err := stub.GetRow("Orders", []shim.Column{shim.Column{Value: &shim.Column_String_{String_: orderID}}})
+		if err != nil {
+			return nil, errors.New("Error retrieving order with id '" + orderID + "': " + err.Error())
+		}
+		quantityVal := orderRow.Columns[3].GetUint32()
+		orderObj := Order{ID: orderID, Quantity: int(quantityVal)}
+		orderBytes, err := json.Marshal(orderObj)
+		if err != nil {
+			return nil, errors.New("Error converting order into JSON: " + err.Error())
+		}
+		return orderBytes, nil
 	}
 
 	return nil, errors.New("Incorrect query function name")

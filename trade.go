@@ -12,6 +12,8 @@ import (
 
 	"encoding/binary"
 
+	"math"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
@@ -223,8 +225,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 		if err != nil {
 			return nil, errors.New("Error retrieving order with id '" + orderID + "': " + err.Error())
 		}
-		quantityVal := orderRow.Columns[3].GetUint32()
-		orderObj := Order{ID: orderID, Quantity: int(quantityVal)}
+		totalPriceColValue := orderRow.Columns[4].GetBytes()
+		orderObj := Order{ID: orderID, Quantity: int(orderRow.Columns[3].GetUint32()), TotalPrice: math.Float32frombits(binary.BigEndian.Uint32(totalPriceColValue))}
 		orderBytes, err := json.Marshal(orderObj)
 		if err != nil {
 			return nil, errors.New("Error converting order into JSON: " + err.Error())
